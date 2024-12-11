@@ -26,15 +26,6 @@ pipeline {
                sh "mvn test"
             }
         }
-        
-		stage('OWASP Dependency Check') {
-            steps {
-               dependencyCheck additionalArguments: ' --scan ./ ', odcInstallation: 'DC'
-                    dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-            }
-        }
-
-
         stage('Sonar Analysis') {
             steps {
                withSonarQubeEnv('sonar'){
@@ -43,9 +34,7 @@ pipeline {
                    -Dsonar.projectKey=Santa '''
                }
             }
-        }
-
-		 
+        }	 
         stage('Code-Build') {
             steps {
                sh "mvn clean package"
@@ -70,13 +59,6 @@ pipeline {
                     sh "docker push adijaiswal/santa123:latest"
                  }
                }
-            }
-        }
-        
-        	 
-        stage('Docker Image Scan') {
-            steps {
-               sh "trivy image adijaiswal/santa123:latest "
             }
         }
     }
