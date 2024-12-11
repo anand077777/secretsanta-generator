@@ -20,7 +20,7 @@ pipeline {
                 sh "mvn clean compile"
             }
         }
-        
+
         stage('Unit Tests') {
             steps {
                 sh "mvn test"
@@ -42,7 +42,38 @@ pipeline {
 
         stage('Code Build') {
             steps {
-                sh "mvn clean package"
+                sh "mvn clean install" // Changed to `mvn install` to ensure dependencies are included.
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker-cred') {
+                        sh "docker build -t santa123 ."
+                    }
+                }
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker-cred') {
+                        sh "docker tag santa123 anands07777/santa123:latest"
+                        sh "docker push anands07777/santa123:latest"
+                    }
+                }
+            }
+        }
+
+        stage('Docker Run') { // Renamed this stage to avoid duplication
+            steps { 
+                script {
+                    withDockerRegistry(credentialsId: 'docker-cred') {
+                        sh "docker run -d -p 8081:8080 anands07777/santa123"
+                    }
+                }
             }
         }
     }
