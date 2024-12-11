@@ -1,69 +1,58 @@
 pipeline {
     agent any
-    tools{
+    tools {
         jdk 'jdk17'
         maven 'maven3'
     }
-    environment{
-        SCANNER_HOME= tool 'sonar-scanner'
+    environment {
+        SCANNER_HOME = tool 'sonar-scanner'
     }
 
     stages {
-        stage('git-checkout') {
+        stage('Git Checkout') {
             steps {
                 git 'https://github.com/jaiswaladi246/secretsanta-generator.git'
             }
         }
 
-        stage('Code-Compile') {
+        stage('Code Compile') {
             steps {
-               sh "mvn clean compile"
+                sh "mvn clean compile"
             }
         }
         
         stage('Unit Tests') {
             steps {
-               sh "mvn test"
+                sh "mvn test"
             }
         }
+
         stage('Sonar Analysis') {
             steps {
-               withSonarQubeEnv('sonar'){
-                   sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Santa \
-                   -Dsonar.java.binaries=. \
-                   -Dsonar.projectKey=Santa '''
-               }
-            }
-        }	 
-        stage('Code-Build') {
-            steps {
-               sh "mvn clean package"
+                withSonarQubeEnv('sonar') {
+                    sh """
+                        ${SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectName=Santa \
+                        -Dsonar.java.binaries=target/classes \
+                        -Dsonar.projectKey=Santa
+                    """
+                }
             }
         }
 
-         stage('Docker Build') {
+        stage('Code Build') {
             steps {
-               script{
-                   withDockerRegistry(credentialsId: 'docker-cred') {
-                    sh "docker build -t  santa123 . "
-                 }
-               }
-            }
-        }
-
-        stage('Docker Push') {
-            steps {
-               script{
-                   withDockerRegistry(credentialsId: 'docker-cred') {
-                    sh "docker tag santa123 adijaiswal/santa123:latest"
-                    sh "docker push adijaiswal/santa123:latest"
-                 }
-               }
+                sh "mvn clean package"
             }
         }
     }
-		
-		
 
-    
+    post {
+        always {
+            echo 'Pipeline execution completed.'
+        }
+        failure {
+            echo 'Pipeline failed.'
+        }
+    }
 }
