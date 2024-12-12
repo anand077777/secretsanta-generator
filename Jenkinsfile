@@ -42,15 +42,16 @@ pipeline {
 
         stage('Code Build') {
             steps {
-                sh "mvn clean install" // Builds the code and packages it into a JAR/WAR
+                sh "mvn clean install" // Changed to `mvn install` to ensure dependencies are included.
             }
         }
 
         stage('Docker Build') {
             steps {
                 script {
-                    def imageTag = "${env.BUILD_NUMBER}" // Use Jenkins BUILD_NUMBER for unique tagging
-                    sh "docker build -t anands07777/santa:${imageTag} ."
+                    withDockerRegistry(credentialsId: 'docker-cred') {
+                        sh "docker build -t santa123 ."
+                    }
                 }
             }
         }
@@ -58,22 +59,20 @@ pipeline {
         stage('Docker Push') {
             steps {
                 script {
-                    def imageTag = "${env.BUILD_NUMBER}" // Ensure consistency in tag
                     withDockerRegistry(credentialsId: 'docker-cred') {
-                        sh "docker push anands07777/santa:${imageTag}"
+                        sh "docker tag santa123 anands07777/santa123:latest"
+                        sh "docker push anands07777/santa123:latest"
                     }
                 }
             }
         }
 
-        stage('Docker Run') {
-            steps {
+        stage('Docker Run') { // Renamed this stage to avoid duplication
+            steps { 
                 script {
-                    def imageTag = "${env.BUILD_NUMBER}" // Consistent tag for running the container
-                    sh """
-                        docker stop santa-container || true && docker rm santa-container || true
-                        docker run -d -p 8081:8080 --name santa-container anands07777/santa:${imageTag}
-                    """
+                    withDockerRegistry(credentialsId: 'docker-cred') {
+                        sh "docker run -d -p 8081:8080 anands07777/santa123"
+                    }
                 }
             }
         }
